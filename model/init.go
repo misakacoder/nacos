@@ -23,8 +23,8 @@ func FirstOrCreate() {
 	}
 	init := []any{
 		&NamespaceInfo{NamespaceID: "", NamespaceName: consts.DefaultNamespaceID, Description: "Public Namespace"},
-		&User{Username: "nacos", Password: util.MD5("nacos"), Enabled: true},
-		&Role{Username: "nacos", Role: "ROLE_ADMIN"},
+		&User{Username: consts.DefaultUsername, Password: util.MD5(consts.DefaultUsername), Enabled: true},
+		&Role{Username: consts.DefaultUsername, Role: "ROLE_ADMIN"},
 	}
 	for _, data := range init {
 		db.GORM.FirstOrCreate(data)

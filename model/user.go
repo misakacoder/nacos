@@ -7,8 +7,12 @@ type User struct {
 	Enabled  bool   `gorm:"column:enabled;type:boolean;not null;comment:enabled"`
 }
 
-type LoginUser struct {
+type Username struct {
 	Username string `form:"username" json:"username" binding:"required" msg:"username不能为空"`
+}
+
+type UserInfo struct {
+	Username
 	Password string `form:"password" json:"password" binding:"required" msg:"password不能为空"`
 }
 
@@ -21,4 +25,19 @@ type Token struct {
 
 type AccessToken struct {
 	AccessToken string `form:"accessToken" header:"accessToken"`
+}
+
+type SearchUser struct {
+	Username   string `form:"username"`
+	SearchType string `form:"search"`
+}
+
+type UpdateUser struct {
+	Username
+	NewPassword string `form:"newPassword" json:"newPassword" binding:"required" msg:"newPassword不能为空"`
+}
+
+type UserDetail struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
 }

@@ -88,7 +88,8 @@ func initGORM() *gorm.DB {
 			NamingStrategy: schema.NamingStrategy{
 				SingularTable: true,
 			},
-			PrepareStmt: true,
+			PrepareStmt:    true,
+			TranslateError: true,
 		}
 		if database.PrintSql {
 			slowSqlTime, err := time.ParseDuration(database.SlowSqlTime)

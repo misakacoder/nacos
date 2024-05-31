@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"github.com/go-sql-driver/mysql"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 	"io"
@@ -113,15 +112,8 @@ func getSqlBuilder(searchConfig *model.SearchConfig, blur bool) dbutil.QueryBuil
 }
 
 func whereOnBlur(builder dbutil.QueryBuilder, field, value string, blur bool) {
-	joiner := "="
-	if blur && value != "" {
-		value = strings.TrimFunc(value, func(r rune) bool {
-			return r == '*'
-		})
-		joiner = "like"
-		value = "%" + value + "%"
-	}
-	builder.WhereOnConditional(fmt.Sprintf("%s %s ?", field, joiner), value, value != "")
+	sql, arg := router.BlurQuery(field, value, blur)
+	builder.WhereOnConditional(sql, arg, value != "")
 }
 
 func show(context *gin.Context, showType string) {
@@ -230,21 +222,18 @@ loop:
 		namespaceID := configInfo.NamespaceID
 		groupID := configInfo.GroupID
 		dataID := configInfo.DataID
-		if err := db.GORM.Create(&configInfo).Error; err != nil {
-			var duplicateError *mysql.MySQLError
-			if errors.As(err, &duplicateError) && duplicateError.Number == 1062 {
-				switch policy {
-				case "ABORT":
-					result.FailData = append(result.FailData, model.BatchAddConfigResultData{Group: groupID, DataId: dataID})
-					setBatchAddConfigResultSkipData(&result, configInfos[i+1:])
-					break loop
-				case "SKIP":
-					setBatchAddConfigResultSkipData(&result, []model.ConfigInfo{configInfo})
-				case "OVERWRITE":
-					result.SuccessCount += 1
-					db.GORM.Where(&model.ConfigKey{NamespaceID: &namespaceID, GroupID: groupID, DataID: groupID}).Updates(configInfo)
-					addHistoryConfigInfo(db.GORM, &configInfo, "U")
-				}
+		if err := db.GORM.Create(&configInfo).Error; errors.Is(err, gorm.ErrDuplicatedKey) {
+			switch policy {
+			case "ABORT":
+				result.FailData = append(result.FailData, model.BatchAddConfigResultData{Group: groupID, DataId: dataID})
+				setBatchAddConfigResultSkipData(&result, configInfos[i+1:])
+				break loop
+			case "SKIP":
+				setBatchAddConfigResultSkipData(&result, []model.ConfigInfo{configInfo})
+			case "OVERWRITE":
+				result.SuccessCount += 1
+				db.GORM.Where(&model.ConfigKey{NamespaceID: &namespaceID, GroupID: groupID, DataID: groupID}).Updates(configInfo)
+				addHistoryConfigInfo(db.GORM, &configInfo, "U")
 			}
 		} else {
 			result.SuccessCount += 1
