@@ -1,0 +1,27 @@
+server:
+  port: 18848
+
+database:
+  host: 127.0.0.1
+  port: 3306
+  username: root
+  password: root
+  name: nacos_go
+  maxIdleConn: 32
+  maxOpenConn: 64
+  connMaxLifeTime: 1h
+  slowSqlTime: 100ms
+  printSql: true
+
+nacos:
+  auth:
+    enabled: true
+    secretKey:
+    expireTime: 7200
+    cache: true
+  cluster:
+    - 127.0.0.1:18848
+
+log:
+  filename:
+  level: DEBUG
