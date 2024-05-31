@@ -9,13 +9,13 @@ import (
 	"nacos/database/dbutil"
 	"nacos/model"
 	"nacos/router"
-	"nacos/router/user"
+	"nacos/router/auth"
 	"nacos/util"
 	"net/http"
 )
 
 func RegisterV1(engine *gin.Engine) {
-	namespace := engine.Group(router.ApiV1+"/console/namespaces", user.Auth)
+	namespace := engine.Group(router.ApiV1+"/console/namespaces", auth.Auth)
 	{
 		namespace.GET("", queryNamespace)
 		namespace.POST("", saveNamespace)

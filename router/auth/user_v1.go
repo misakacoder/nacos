@@ -1,4 +1,4 @@
-package user
+package auth
 
 import (
 	"errors"
@@ -14,20 +14,6 @@ import (
 	"net/http"
 	"time"
 )
-
-func RegisterV1(engine *gin.Engine) {
-	auth := engine.Group(router.ApiV1 + "/auth")
-	{
-		auth.POST("/users/login", login)
-	}
-	auth.Use(Auth)
-	{
-		auth.GET("/users", searchUser)
-		auth.POST("/users", addUser)
-		auth.PUT("/users", updateUser)
-		auth.DELETE("/users", deleteUser)
-	}
-}
 
 func login(context *gin.Context) {
 	loginUser := model.Bind(context, &model.UserInfo{})
@@ -45,18 +31,29 @@ func login(context *gin.Context) {
 		return
 	}
 	tokenString, claims := token.Manager.CreateToken(username)
-	context.JSON(http.StatusOK, model.Token{AccessToken: tokenString, Ttl: claims.ExpiresAt - time.Now().Unix(), GlobalAdmin: true, Username: username})
+	var count int64
+	db.GORM.Where(&model.Role{Username: username, Role: consts.DefaultRole}).Count(&count)
+	isGlobalAdmin := util.ConditionalExpression(count > 0, true, false)
+	context.JSON(http.StatusOK, model.Token{AccessToken: tokenString, Ttl: claims.ExpiresAt - time.Now().Unix(), GlobalAdmin: isGlobalAdmin, Username: username})
 }
 
 func searchUser(context *gin.Context) {
 	param := model.Bind(context, &model.SearchUser{})
 	page := model.Bind(context, &model.Page{})
-	sql, arg := router.BlurQuery("username", param.Username, param.SearchType == "blur")
 	var conditions []any
-	if arg != "" {
+	if sql, arg := router.BlurQuery("username", param.Username, param.SearchType == "blur"); arg != "" {
 		conditions = append(conditions, []any{sql, arg})
 	}
 	context.JSON(http.StatusOK, model.PaginateResult[model.User, model.UserDetail](conditions, page))
+}
+
+func searchUsername(context *gin.Context) {
+	username := model.Bind(context, &model.Username{})
+	field := "username"
+	sql, arg := router.BlurQuery(field, username.Username, true)
+	var usernames []string
+	db.GORM.Model(model.User{}).Select(field).Where(sql, arg).Find(&usernames)
+	context.JSON(http.StatusOK, usernames)
 }
 
 func addUser(context *gin.Context) {

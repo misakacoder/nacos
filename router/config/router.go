@@ -3,12 +3,12 @@ package config
 import (
 	"github.com/gin-gonic/gin"
 	"nacos/router"
-	"nacos/router/user"
+	"nacos/router/auth"
 	"net/http"
 )
 
 func RegisterV1(engine *gin.Engine) {
-	cs := engine.Group(router.ApiV1+"/cs", user.Auth)
+	cs := engine.Group(router.ApiV1+"/cs", auth.Auth)
 	{
 		cs.GET("/configs", queryConfig)
 		cs.GET("/searchDetail", queryConfig)

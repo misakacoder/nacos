@@ -6,7 +6,7 @@ import (
 	"nacos/configuration"
 	"nacos/consts"
 	"nacos/router"
-	"nacos/router/user"
+	"nacos/router/auth"
 	"net/http"
 )
 
@@ -15,7 +15,7 @@ func RegisterV1(engine *gin.Engine) {
 	{
 		server.GET("/state", serverState)
 	}
-	server.Use(user.Auth)
+	server.Use(auth.Auth)
 	{
 		server.GET("/guide", serverGuide)
 		server.GET("/announcement", serverAnnouncement)

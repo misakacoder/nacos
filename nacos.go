@@ -9,10 +9,10 @@ import (
 	"nacos/middleware"
 	"nacos/model"
 	"nacos/router"
+	"nacos/router/auth"
 	"nacos/router/config"
 	"nacos/router/namespace"
 	"nacos/router/server"
-	"nacos/router/user"
 	"nacos/util"
 	"strings"
 	"time"
@@ -62,7 +62,7 @@ func initEngine(engine *gin.Engine) {
 	config.RegisterV2(engine)
 	server.RegisterV1(engine)
 	namespace.RegisterV1(engine)
-	user.RegisterV1(engine)
+	auth.RegisterV1(engine)
 }
 
 func startup(engine *gin.Engine) {
