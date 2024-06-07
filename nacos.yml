@@ -23,6 +23,7 @@ nacos:
   cluster:
     token: nacos
     list:
+      - 127.0.0.1:28848
 
 log:
   filename:

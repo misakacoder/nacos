@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-var cs = cluster.NewCluster()
+var Cluster = cluster.NewCluster()
 
 func RegisterV1(engine *gin.Engine) {
 	engine.GET(rpc.DefaultDebugPath, func(context *gin.Context) {
@@ -32,8 +32,8 @@ func RegisterV1(engine *gin.Engine) {
 
 func nodes(context *gin.Context) {
 	keyword := context.Query("keyword")
-	clients := []*cluster.Client{cs.Owner}
-	clients = append(clients, cs.Clients...)
+	clients := []*cluster.Client{Cluster.Owner}
+	clients = append(clients, Cluster.Clients...)
 	node := []model.Node{}
 	for _, client := range clients {
 		if strings.HasPrefix(client.Address, keyword) {
