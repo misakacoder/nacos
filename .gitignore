@@ -1,4 +1,6 @@
 .idea
+.pkg
+node
 node_modules
 dist
 *.iml
