@@ -7,6 +7,7 @@ import (
 
 type configuration struct {
 	Server struct {
+		Bind string
 		Port int
 	}
 	Database struct {
@@ -23,10 +24,14 @@ type configuration struct {
 	}
 	Nacos struct {
 		Auth struct {
-			Enabled    bool   `yaml:"enabled"`
+			Enabled    bool
 			SecretKey  string `yaml:"secretKey"`
 			ExpireTime int64  `yaml:"expireTime"`
-			Cache      bool   `yaml:"cache"`
+			Cache      bool
+		}
+		Cluster struct {
+			Token string
+			List  []string
 		}
 		Version string
 	}

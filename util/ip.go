@@ -8,7 +8,7 @@ import (
 )
 
 func GetLocalAddr() (addr []string) {
-	addr = append(addr, consts.Localhost, "127.0.0.1")
+	addr = append(addr, consts.Localhost)
 	interfaces, err := net.Interfaces()
 	if err != nil {
 		logger.Error(err.Error())

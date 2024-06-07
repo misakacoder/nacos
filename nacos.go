@@ -6,10 +6,12 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/misakacoder/logger"
 	"nacos/configuration"
+	"nacos/consts"
 	"nacos/middleware"
 	"nacos/model"
 	"nacos/router"
 	"nacos/router/auth"
+	"nacos/router/cluster"
 	"nacos/router/config"
 	"nacos/router/namespace"
 	"nacos/router/server"
@@ -63,20 +65,23 @@ func initEngine(engine *gin.Engine) {
 	server.RegisterV1(engine)
 	namespace.RegisterV1(engine)
 	auth.RegisterV1(engine)
+	cluster.RegisterV1(engine)
 }
 
 func startup(engine *gin.Engine) {
 	logger.Info("The Nacos version is %s and the build time is %s", version, buildTime)
-	port := configuration.Configuration.Server.Port
+	conf := configuration.Configuration.Server
+	bind := conf.Bind
+	port := conf.Port
 	banner := strings.Builder{}
 	startUpTime := time.Since(startTime)
 	banner.WriteString(fmt.Sprintf("Started Nacos in %.2f seconds...", startUpTime.Seconds()))
-	addresses := util.GetLocalAddr()
+	addresses := util.ConditionalExpression(bind == consts.AnyAddress, util.GetLocalAddr(), []string{bind})
 	for _, address := range addresses {
 		banner.WriteString(fmt.Sprintf("\n - Listen on: http://%s:%d", address, port))
 	}
 	logger.Info(banner.String())
-	err := engine.Run(fmt.Sprintf(":%d", port))
+	err := engine.Run(fmt.Sprintf("%s:%d", bind, port))
 	if err != nil {
 		logger.Error(err.Error())
 	}
