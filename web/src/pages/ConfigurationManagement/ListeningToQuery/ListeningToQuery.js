@@ -243,6 +243,7 @@ class ListeningToQuery extends React.Component {
                   <Input
                     placeholder={locale.pleaseEnterTheDataId}
                     style={{ width: 200 }}
+                    hasClear
                     {...this.init('dataId', {
                       rules: [
                         {
@@ -263,6 +264,7 @@ class ListeningToQuery extends React.Component {
                   <Input
                     placeholder={locale.pleaseInputGroup}
                     style={{ width: 200 }}
+                    hasClear
                     {...this.init('group', {
                       rules: [
                         {

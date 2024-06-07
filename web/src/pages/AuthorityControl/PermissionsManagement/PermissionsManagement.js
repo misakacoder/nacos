@@ -124,6 +124,7 @@ class PermissionsManagement extends React.Component {
               htmlType="text"
               placeholder={this.state.defaultFuzzySearch ? locale.defaultFuzzyd : locale.fuzzyd}
               style={{ width: 200 }}
+              hasClear
               onChange={role => {
                 this.setState({ role });
               }}

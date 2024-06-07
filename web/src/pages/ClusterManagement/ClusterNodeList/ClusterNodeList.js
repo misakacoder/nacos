@@ -107,7 +107,7 @@ class ClusterNodeList extends React.Component {
     const accessToken = JSON.parse(localStorage.token || '{}').accessToken;
     this.openLoading();
     axios
-      .post(`v1/core/cluster/server/leave?accessToken=${accessToken}`, nodes)
+      .post(`/nacos/v1/core/cluster/server/leave?accessToken=${accessToken}`, nodes)
       .then(response => {
         if (response.data.code === 200) {
           Message.success(locale.leaveSucc);
@@ -191,6 +191,7 @@ class ClusterNodeList extends React.Component {
                   <Input
                     placeholder={nodeIpPlaceholder}
                     style={{ width: 200 }}
+                    hasClear
                     value={keyword}
                     onChange={keyword => this.setState({ keyword })}
                     onPressEnter={() =>

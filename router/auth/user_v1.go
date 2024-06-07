@@ -32,7 +32,7 @@ func login(context *gin.Context) {
 	}
 	tokenString, claims := token.Manager.CreateToken(username)
 	var count int64
-	db.GORM.Model(model.Role{}).Where(&model.Role{Username: username, Role: consts.DefaultRole}).Count(&count)
+	db.GORM.Model(&model.Role{}).Where(&model.Role{Username: username, Role: consts.DefaultRole}).Count(&count)
 	isGlobalAdmin := util.ConditionalExpression(count > 0, true, false)
 	context.JSON(http.StatusOK, model.Token{AccessToken: tokenString, Ttl: claims.ExpiresAt - time.Now().Unix(), GlobalAdmin: isGlobalAdmin, Username: username})
 }

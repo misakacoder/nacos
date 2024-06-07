@@ -163,6 +163,7 @@ class SubscriberList extends React.Component {
                   <Input
                     placeholder={serviceNamePlaceholder}
                     style={{ width: 200 }}
+                    hasClear
                     value={search.serviceName}
                     onChange={serviceName => this.setState({ search: { ...search, serviceName } })}
                     onPressEnter={() =>
@@ -174,6 +175,7 @@ class SubscriberList extends React.Component {
                   <Input
                     placeholder={groupNamePlaceholder}
                     style={{ width: 200 }}
+                    hasClear
                     value={search.groupName}
                     onChange={groupName => this.setState({ search: { ...search, groupName } })}
                     onPressEnter={() =>
