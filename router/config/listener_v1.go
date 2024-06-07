@@ -3,19 +3,14 @@ package config
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"nacos/listener"
 	"nacos/model"
 	"nacos/router"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
-)
-
-var (
-	mutex           = sync.Mutex{}
-	configListeners = map[string][]chan string{}
 )
 
 func listenConfig(context *gin.Context) {
@@ -26,20 +21,20 @@ func listenConfig(context *gin.Context) {
 	if err != nil {
 		pullingTimeout = defaultPullingTimeout
 	}
-	var configKey string
-	var configKeySlice []string
+	var listeningKey string
+	var listeningKeys []string
 	configKeys := map[string]string{}
 	for _, char := range listeningConfigs {
 		if char == 1 {
-			configKeySlice = append(configKeySlice, configKey)
-			configSliceLength := len(configKeySlice)
+			listeningKeys = append(listeningKeys, listeningKey)
+			configSliceLength := len(listeningKeys)
 			if configSliceLength >= 3 && configSliceLength <= 4 {
-				dataID := configKeySlice[0]
-				groupID := configKeySlice[1]
-				md5 := configKeySlice[2]
+				dataID := listeningKeys[0]
+				groupID := listeningKeys[1]
+				md5 := listeningKeys[2]
 				namespaceID := ""
 				if configSliceLength == 4 {
-					namespaceID = configKeySlice[3]
+					namespaceID = listeningKeys[3]
 				}
 				key := fmt.Sprintf("%s+%s+%s", namespaceID, groupID, dataID)
 				configKeys[key] = md5
@@ -47,40 +42,34 @@ func listenConfig(context *gin.Context) {
 				router.ConfigListenerError.With("监听的参数格式错误").Error(context)
 				return
 			}
-			configKeySlice = []string{}
-			configKey = ""
+			listeningKeys = []string{}
+			listeningKey = ""
 		} else if char == 2 {
-			configKeySlice = append(configKeySlice, configKey)
-			configKey = ""
+			listeningKeys = append(listeningKeys, listeningKey)
+			listeningKey = ""
 		} else {
-			configKey += string(char)
+			listeningKey += string(char)
 		}
 	}
 	for key, md5 := range configKeys {
 		keys := strings.Split(key, "+")
-		baseConfigRO := model.ConfigKey{NamespaceID: &keys[0], GroupID: keys[1], DataID: keys[2]}
-		configInfo := getConfigInfo(context, &baseConfigRO)
+		configKey := model.ConfigKey{NamespaceID: &keys[0], GroupID: keys[1], DataID: keys[2]}
+		configInfo := getConfigInfo(context, &configKey)
 		if configInfo != nil && configInfo.MD5 != md5 {
-			context.String(http.StatusOK, buildChangedConfigInfo(baseConfigRO))
+			context.String(http.StatusOK, listener.BuildChangedKey(configKey))
 			return
 		}
 	}
 	ch := make(chan string)
 	defer close(ch)
 	defer func() {
-		mutex.Lock()
-		defer mutex.Unlock()
 		for key := range configKeys {
-			delete(configListeners, key)
+			listener.ConfigListenerManager.Remove(key)
 		}
 	}()
-	func() {
-		mutex.Lock()
-		defer mutex.Unlock()
-		for key := range configKeys {
-			configListeners[key] = append(configListeners[key], ch)
-		}
-	}()
+	for key := range configKeys {
+		listener.ConfigListenerManager.Add(key, ch)
+	}
 	timer := time.NewTimer(time.Duration(pullingTimeout) * time.Millisecond)
 	select {
 	case changeKey := <-ch:
@@ -89,20 +78,4 @@ func listenConfig(context *gin.Context) {
 	case <-timer.C:
 		break
 	}
-}
-
-func buildChangedConfigInfo(configKey model.ConfigKey) string {
-	namespaceID := *configKey.NamespaceID
-	builder := strings.Builder{}
-	builder.WriteString(configKey.DataID)
-	builder.WriteRune(2)
-	builder.WriteString(configKey.GroupID)
-	if namespaceID == "" {
-		builder.WriteRune(1)
-	} else {
-		builder.WriteRune(2)
-		builder.WriteString(namespaceID)
-		builder.WriteRune(1)
-	}
-	return url.QueryEscape(builder.String())
 }

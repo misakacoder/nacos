@@ -10,6 +10,7 @@ import (
 	"io"
 	"nacos/database"
 	"nacos/database/dbutil"
+	"nacos/listener"
 	"nacos/model"
 	"nacos/router"
 	"nacos/util"
@@ -301,7 +302,7 @@ func importConfig(context *gin.Context) {
 
 func addConfig(context *gin.Context) {
 	param := model.Bind(context, &model.AddConfig{})
-	notify := false
+	notify := true
 	db.Transaction(func(tx *gorm.DB) {
 		data := &model.ConfigInfo{}
 		util.Copy(param, &data)
@@ -314,17 +315,17 @@ func addConfig(context *gin.Context) {
 			addConfigTagsRelation(tx, param.ConfigKey, param.ConfigTags)
 			addHistoryConfigInfo(tx, data, "I")
 		} else {
-			dbutil.PanicError(tx.Model(configInfo).Updates(data))
+			dbutil.PanicError(tx.Model(&model.ConfigInfo{ID: configInfo.ID}).Updates(data))
 			addHistoryConfigInfo(tx, configInfo, "U")
 			deleteConfigTagsRelation(tx, param.ConfigKey)
 			addConfigTagsRelation(tx, param.ConfigKey, param.ConfigTags)
-			if configInfo.MD5 != data.MD5 {
-				notify = true
+			if configInfo.MD5 == data.MD5 {
+				notify = false
 			}
 		}
 	})
 	if notify {
-		sendChangedConfigInfo(param.ConfigKey)
+		listener.ConfigListenerManager.Notice(param.ConfigKey)
 	}
 	context.String(http.StatusOK, "%v", true)
 }
@@ -367,26 +368,13 @@ func deleteConfigByUniqueKeys(context *gin.Context, keys []model.ConfigKey) (all
 					configInfo.SrcIP = util.GetClientIP(context)
 					addHistoryConfigInfo(tx, configInfo, "D")
 					deleteConfigTagsRelation(tx, key)
-					sendChangedConfigInfo(key)
+					listener.ConfigListenerManager.Notice(key)
 					allAffected += affected
 				}
 			}
 		}
 	})
 	return allAffected
-}
-
-func sendChangedConfigInfo(configKey model.ConfigKey) {
-	key := fmt.Sprintf("%s+%s+%s", *configKey.NamespaceID, configKey.GroupID, configKey.DataID)
-	func() {
-		mutex.Lock()
-		defer mutex.Unlock()
-		if channels, ok := configListeners[key]; ok {
-			for _, channel := range channels {
-				channel <- buildChangedConfigInfo(configKey)
-			}
-		}
-	}()
 }
 
 func getConfigInfo(context *gin.Context, configKey *model.ConfigKey) *model.ConfigInfo {
