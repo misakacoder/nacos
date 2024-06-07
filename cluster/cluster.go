@@ -9,12 +9,14 @@ import (
 	"time"
 )
 
+var CLUSTER = NewCluster()
+
 type Args struct {
 	Token string
 	Data  any
 }
 
-type Client struct {
+type Node struct {
 	Address     string
 	State       string
 	RefreshTime time.Time
@@ -22,10 +24,10 @@ type Client struct {
 }
 
 type Cluster struct {
-	Owner     *Client
+	Master    *Node
 	token     string
 	rpcServer *rpc.Server
-	Clients   []*Client
+	Slaves    []*Node
 }
 
 func NewCluster() *Cluster {
@@ -34,7 +36,7 @@ func NewCluster() *Cluster {
 	conf := configuration.Configuration.Nacos.Cluster
 	addresses := conf.List
 	cluster := &Cluster{
-		Owner:     &Client{Address: fmt.Sprintf("%s:%d", ip, server.Port), State: "UP", RefreshTime: time.Now()},
+		Master:    &Node{Address: fmt.Sprintf("%s:%d", ip, server.Port), State: "UP", RefreshTime: time.Now()},
 		token:     conf.Token,
 		rpcServer: rpc.NewServer(),
 	}
@@ -42,12 +44,12 @@ func NewCluster() *Cluster {
 	cluster.rpcServer.HandleHTTP(rpc.DefaultRPCPath, rpc.DefaultDebugPath)
 	if len(addresses) > 0 {
 		for _, address := range addresses {
-			cluster.Clients = append(cluster.Clients, &Client{Address: address, State: "DOWN", RefreshTime: time.Now(), client: nil})
+			cluster.Slaves = append(cluster.Slaves, &Node{Address: address, State: "DOWN", RefreshTime: time.Now(), client: nil})
 		}
 		go func(cluster *Cluster) {
 			args := Args{Token: conf.Token}
 			for {
-				for _, element := range cluster.Clients {
+				for _, element := range cluster.Slaves {
 					element.RefreshTime = time.Now()
 					if element.client == nil {
 						addr := element.Address

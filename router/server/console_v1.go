@@ -3,11 +3,11 @@ package server
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"nacos/cluster"
 	"nacos/configuration"
 	"nacos/consts"
 	"nacos/router"
 	"nacos/router/auth"
-	"nacos/router/cluster"
 	"nacos/util"
 	"net/http"
 )
@@ -36,7 +36,7 @@ func serverState(context *gin.Context) {
 		"console_ui_enabled":            "true",
 		"defaultMaxAggrCount":           "10000",
 		"defaultGroupQuota":             "200",
-		"startup_mode":                  util.ConditionalExpression(len(cluster.Cluster.Clients) == 0, "standalone", "cluster"),
+		"startup_mode":                  util.ConditionalExpression(len(cluster.CLUSTER.Slaves) == 0, "standalone", "cluster"),
 		"isHealthCheck":                 "true",
 		"version":                       nacos.Version,
 		"function_mode":                 nil,

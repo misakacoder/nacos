@@ -13,8 +13,6 @@ import (
 	"time"
 )
 
-var Cluster = cluster.NewCluster()
-
 func RegisterV1(engine *gin.Engine) {
 	engine.GET(rpc.DefaultDebugPath, func(context *gin.Context) {
 		http.DefaultServeMux.ServeHTTP(context.Writer, context.Request)
@@ -32,9 +30,9 @@ func RegisterV1(engine *gin.Engine) {
 
 func nodes(context *gin.Context) {
 	keyword := context.Query("keyword")
-	clients := []*cluster.Client{Cluster.Owner}
-	clients = append(clients, Cluster.Clients...)
-	node := []model.Node{}
+	clients := []*cluster.Node{cluster.CLUSTER.Master}
+	clients = append(clients, cluster.CLUSTER.Slaves...)
+	node := make([]model.Node, 0)
 	for _, client := range clients {
 		if strings.HasPrefix(client.Address, keyword) {
 			node = append(node, getNode(client))
@@ -47,7 +45,7 @@ func leave(context *gin.Context) {
 	router.AccessDenied.Error(context)
 }
 
-func getNode(client *cluster.Client) model.Node {
+func getNode(client *cluster.Node) model.Node {
 	ip, port := parseAddress(client.Address)
 	node := model.Node{
 		IP:      ip,
