@@ -7,8 +7,6 @@ import (
 	"nacos/router"
 	"nacos/util"
 	"net/http"
-	"runtime"
-	"strings"
 	"time"
 )
 
@@ -49,23 +47,10 @@ func Recovery(context *gin.Context) {
 			default:
 				serverError.Data = fmt.Sprintf("%v", tp)
 			}
-			logger.Error("%v", getStackTrace(err))
+			logger.Error("%v", util.GetStackTrace(err))
 			serverError.Error(context)
 			context.Abort()
 		}
 	}()
 	context.Next()
-}
-
-func getStackTrace(err any) string {
-	stackTrace := strings.Builder{}
-	stackTrace.WriteString(fmt.Sprintf("%v", err))
-	for i := 1; ; i++ {
-		pc, file, line, ok := runtime.Caller(i)
-		if !ok {
-			break
-		}
-		stackTrace.WriteString(fmt.Sprintf("\n - %s:%d (0x%x)", file, line, pc))
-	}
-	return stackTrace.String()
 }

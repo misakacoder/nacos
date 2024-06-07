@@ -30,19 +30,28 @@ func (manager *configListenerManager) Remove(key string) {
 	delete(manager.listeners, key)
 }
 
-func (manager *configListenerManager) Notice(configKey model.ConfigKey) {
-	key := fmt.Sprintf("%s+%s+%s", *configKey.NamespaceID, configKey.GroupID, configKey.DataID)
+func (manager *configListenerManager) Notify(configKey model.ConfigKey) {
+	namespaceID := ""
+	if configKey.NamespaceID != nil {
+		namespaceID = *configKey.NamespaceID
+	}
+	key := fmt.Sprintf("%s+%s+%s", namespaceID, configKey.GroupID, configKey.DataID)
 	manager.mutex.RLock()
 	defer manager.mutex.RUnlock()
 	if channels, ok := manager.listeners[key]; ok {
 		for _, channel := range channels {
-			channel <- BuildChangedKey(configKey)
+			go func(channel chan string) {
+				channel <- BuildChangedKey(configKey)
+			}(channel)
 		}
 	}
 }
 
 func BuildChangedKey(configKey model.ConfigKey) string {
-	namespaceID := *configKey.NamespaceID
+	namespaceID := ""
+	if configKey.NamespaceID != nil {
+		namespaceID = *configKey.NamespaceID
+	}
 	builder := strings.Builder{}
 	builder.WriteString(configKey.DataID)
 	builder.WriteRune(2)

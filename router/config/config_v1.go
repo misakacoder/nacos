@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 	"io"
+	"nacos/cluster"
 	"nacos/database"
 	"nacos/database/dbutil"
 	"nacos/listener"
@@ -302,7 +303,7 @@ func importConfig(context *gin.Context) {
 
 func addConfig(context *gin.Context) {
 	param := model.Bind(context, &model.AddConfig{})
-	notify := true
+	changed := true
 	db.Transaction(func(tx *gorm.DB) {
 		data := &model.ConfigInfo{}
 		util.Copy(param, &data)
@@ -320,12 +321,13 @@ func addConfig(context *gin.Context) {
 			deleteConfigTagsRelation(tx, param.ConfigKey)
 			addConfigTagsRelation(tx, param.ConfigKey, param.ConfigTags)
 			if configInfo.MD5 == data.MD5 {
-				notify = false
+				changed = false
 			}
 		}
 	})
-	if notify {
-		listener.ConfigListenerManager.Notice(param.ConfigKey)
+	if changed {
+		listener.ConfigListenerManager.Notify(param.ConfigKey)
+		cluster.CLUSTER.NotifySlaveConfigListener(param.ConfigKey)
 	}
 	context.String(http.StatusOK, "%v", true)
 }
@@ -368,7 +370,8 @@ func deleteConfigByUniqueKeys(context *gin.Context, keys []model.ConfigKey) (all
 					configInfo.SrcIP = util.GetClientIP(context)
 					addHistoryConfigInfo(tx, configInfo, "D")
 					deleteConfigTagsRelation(tx, key)
-					listener.ConfigListenerManager.Notice(key)
+					listener.ConfigListenerManager.Notify(key)
+					cluster.CLUSTER.NotifySlaveConfigListener(key)
 					allAffected += affected
 				}
 			}
