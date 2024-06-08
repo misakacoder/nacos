@@ -19,7 +19,13 @@ func RegisterV1(engine *gin.Engine) {
 	}
 	{
 		auth.GET("/roles", searchRole)
+		auth.GET("/roles/search", searchRoleName)
 		auth.POST("/roles", addRole)
 		auth.DELETE("/roles", deleteRole)
+	}
+	{
+		auth.GET("/permissions", searchPermission)
+		auth.POST("/permissions", addPermission)
+		auth.DELETE("/permissions", deletePermission)
 	}
 }

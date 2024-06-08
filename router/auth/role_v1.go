@@ -27,6 +27,10 @@ func searchRole(context *gin.Context) {
 	context.JSON(http.StatusOK, model.PaginateResult[model.Role, model.RoleDetail](conditions, page))
 }
 
+func searchRoleName(context *gin.Context) {
+	context.JSON(http.StatusOK, []string{})
+}
+
 func addRole(context *gin.Context) {
 	param := model.Bind(context, &model.RoleInfo{})
 	if param.Username == consts.DefaultUsername {
