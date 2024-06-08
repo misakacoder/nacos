@@ -6,12 +6,55 @@ import (
 	"nacos/listener"
 	"nacos/model"
 	"nacos/router"
+	"nacos/util"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
 	"time"
 )
+
+func searchListenerByIP(context *gin.Context) {
+	status := map[string]string{}
+	result := map[string]any{
+		"collectStatus":           200,
+		"lisentersGroupkeyStatus": status,
+	}
+	ip := context.Query("ip")
+	if ip != "" {
+		namespaceID := context.Query("namespaceId")
+		for key, listeners := range listener.ConfigListenerManager.Listeners {
+			keys := strings.Split(key, "+")
+			if keys[0] == namespaceID {
+				groupID := keys[1]
+				dataID := keys[2]
+				for _, value := range listeners {
+					if value.IP == ip {
+						status[fmt.Sprintf("%s+%s", groupID, dataID)] = value.MD5
+					}
+				}
+			}
+		}
+	}
+	context.JSON(http.StatusOK, result)
+}
+
+func searchListenerByKey(context *gin.Context) {
+	status := map[string]string{}
+	result := map[string]any{
+		"collectStatus":           200,
+		"lisentersGroupkeyStatus": status,
+	}
+	configKey := model.Bind(context, &model.ConfigKey{})
+	configKey.SetNamespaceID()
+	key := fmt.Sprintf("%s+%s+%s", *configKey.NamespaceID, configKey.GroupID, configKey.DataID)
+	if listeners, ok := listener.ConfigListenerManager.Listeners[key]; ok {
+		for _, value := range listeners {
+			status[value.IP] = value.MD5
+		}
+	}
+	context.JSON(http.StatusOK, result)
+}
 
 func listenConfig(context *gin.Context) {
 	listenerConfig := model.Bind(context, &model.ListenerConfig{})
@@ -67,8 +110,8 @@ func listenConfig(context *gin.Context) {
 			listener.ConfigListenerManager.Remove(key)
 		}
 	}()
-	for key := range configKeys {
-		listener.ConfigListenerManager.Add(key, ch)
+	for key, md5 := range configKeys {
+		listener.ConfigListenerManager.Add(key, listener.ConfigListener{IP: util.GetClientIP(context), MD5: md5, Channel: ch})
 	}
 	timer := time.NewTimer(time.Duration(pullingTimeout) * time.Millisecond)
 	select {

@@ -4,7 +4,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"nacos/router"
 	"nacos/router/auth"
-	"net/http"
 )
 
 func RegisterV1(engine *gin.Engine) {
@@ -20,9 +19,8 @@ func RegisterV1(engine *gin.Engine) {
 		cs.GET("/history", queryHistoryConfig)
 	}
 	{
-		cs.GET("/configs/listener", func(context *gin.Context) {
-			context.JSON(http.StatusOK, gin.H{"collectStatus": 200, "lisentersGroupkeyStatus": map[string]string{}})
-		})
+		cs.GET("/listener", searchListenerByIP)
+		cs.GET("/configs/listener", searchListenerByKey)
 		cs.POST("/configs/listener", listenConfig)
 	}
 }

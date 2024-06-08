@@ -10,24 +10,30 @@ import (
 
 var ConfigListenerManager = &configListenerManager{
 	mutex:     sync.RWMutex{},
-	listeners: map[string][]chan string{},
+	Listeners: map[string][]ConfigListener{},
+}
+
+type ConfigListener struct {
+	IP      string
+	MD5     string
+	Channel chan string
 }
 
 type configListenerManager struct {
 	mutex     sync.RWMutex
-	listeners map[string][]chan string
+	Listeners map[string][]ConfigListener
 }
 
-func (manager *configListenerManager) Add(key string, ch chan string) {
+func (manager *configListenerManager) Add(key string, listener ConfigListener) {
 	manager.mutex.Lock()
 	defer manager.mutex.Unlock()
-	manager.listeners[key] = append(manager.listeners[key], ch)
+	manager.Listeners[key] = append(manager.Listeners[key], listener)
 }
 
 func (manager *configListenerManager) Remove(key string) {
 	manager.mutex.Lock()
 	defer manager.mutex.Unlock()
-	delete(manager.listeners, key)
+	delete(manager.Listeners, key)
 }
 
 func (manager *configListenerManager) Notify(configKey model.ConfigKey) {
@@ -38,11 +44,11 @@ func (manager *configListenerManager) Notify(configKey model.ConfigKey) {
 	key := fmt.Sprintf("%s+%s+%s", namespaceID, configKey.GroupID, configKey.DataID)
 	manager.mutex.RLock()
 	defer manager.mutex.RUnlock()
-	if channels, ok := manager.listeners[key]; ok {
-		for _, channel := range channels {
+	if listeners, ok := manager.Listeners[key]; ok {
+		for _, listener := range listeners {
 			go func(channel chan string) {
 				channel <- BuildChangedKey(configKey)
-			}(channel)
+			}(listener.Channel)
 		}
 	}
 }
