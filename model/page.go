@@ -38,7 +38,7 @@ func PaginateResult[M, R any](condition any, page *Page) PageResult {
 }
 
 func PaginateSQL[R any](sql string, args []any, page *Page) PageResult {
-	countDB := db.GORM.Raw(fmt.Sprintf("select count(1) from (%s) temp_table", sql), args...)
+	countDB := db.GORM.Raw(fmt.Sprintf("select count(1) from (%s) table_count", sql), args...)
 	queryDB := db.GORM.Raw(sql, args...)
 	return paginate[R](countDB, queryDB, page)
 }
