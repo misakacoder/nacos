@@ -255,7 +255,7 @@ func setBatchAddConfigResultSkipData(addConfigResult *model.BatchAddConfigResult
 }
 
 func importConfig(context *gin.Context) {
-	namespaceID := context.Query("tenant")
+	namespaceID := context.Query("namespace")
 	policy := context.DefaultPostForm("policy", "ABORT")
 	srcUser := context.GetString("username")
 	srcIP := util.GetClientIP(context)

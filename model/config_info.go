@@ -77,7 +77,7 @@ type ListenerConfig struct {
 }
 
 type CloneConfigParam struct {
-	NamespaceID string `form:"tenant"`
+	NamespaceID string `form:"namespaceId"`
 	Policy      string `form:"policy" binding:"required" msg:"policy不能为空"`
 }
 
