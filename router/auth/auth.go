@@ -11,7 +11,10 @@ import (
 
 func Auth(context *gin.Context) {
 	if configuration.Configuration.Nacos.Auth.Enabled {
-		accessToken := model.Bind(context, &model.AccessToken{})
+		accessToken := model.BindQuery(context, &model.AccessToken{})
+		if accessToken.AccessToken == "" {
+			accessToken = model.BindForm(context, &model.AccessToken{})
+		}
 		if accessToken.AccessToken == "" {
 			accessToken = model.BindHeader(context, &model.AccessToken{})
 		}

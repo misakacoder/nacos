@@ -3,6 +3,7 @@ package model
 import (
 	"errors"
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
 	"github.com/go-playground/validator/v10"
 	"nacos/router"
 	"nacos/util/collection"
@@ -19,6 +20,13 @@ func BindUri[T any](context *gin.Context, object T) T {
 
 func BindQuery[T any](context *gin.Context, object T) T {
 	return BindAny(context.ShouldBindQuery, object)
+}
+
+func BindForm[T any](context *gin.Context, object T) T {
+	if err := context.ShouldBindWith(object, binding.Form); err != nil {
+		validationError(object, err)
+	}
+	return object
 }
 
 func BindJSON[T any](context *gin.Context, object T) T {
