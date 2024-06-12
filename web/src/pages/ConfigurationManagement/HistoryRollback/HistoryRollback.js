@@ -256,7 +256,6 @@ class HistoryRollback extends React.Component {
           self.openLoading();
         },
         success(result) {
-          console.log(result)
           if (result !== "") {
             resolve(JSON.parse(result));
           } else {

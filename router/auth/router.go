@@ -8,6 +8,7 @@ import (
 func RegisterV1(engine *gin.Engine) {
 	auth := engine.Group(router.ApiV1 + "/auth")
 	auth.POST("/users/login", login)
+	auth.POST("/users/admin", initAdmin)
 
 	auth.Use(Auth)
 	{

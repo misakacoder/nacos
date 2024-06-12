@@ -11,6 +11,10 @@ type Username struct {
 	Username string `form:"username" json:"username" binding:"required" msg:"username不能为空"`
 }
 
+type Password struct {
+	Password string `form:"password" json:"password"`
+}
+
 type UserInfo struct {
 	Username
 	Password string `form:"password" json:"password" binding:"required" msg:"password不能为空"`

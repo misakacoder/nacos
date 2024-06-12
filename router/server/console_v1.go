@@ -6,6 +6,8 @@ import (
 	"nacos/cluster"
 	"nacos/configuration"
 	"nacos/consts"
+	"nacos/database"
+	"nacos/model"
 	"nacos/router"
 	"nacos/router/auth"
 	"nacos/util"
@@ -26,9 +28,12 @@ func RegisterV1(engine *gin.Engine) {
 
 func serverState(context *gin.Context) {
 	nacos := configuration.Configuration.Nacos
+	var adminCount int64
+	db.GORM.Model(model.User{}).Where(&model.User{Username: consts.DefaultUsername}).Count(&adminCount)
 	data := map[string]any{
 		"defaultMaxSize":                "102400",
 		"auth_system_type":              "nacos",
+		"auth_admin_request":            fmt.Sprintf("%v", adminCount <= 0),
 		"auth_enabled":                  fmt.Sprintf("%v", nacos.Auth.Enabled),
 		"defaultMaxAggrSize":            "1024",
 		"maxHealthCheckFailCount":       "12",

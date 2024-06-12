@@ -7,6 +7,7 @@ import (
 	"gorm.io/gorm"
 	"nacos/consts"
 	"nacos/database"
+	"nacos/database/dbutil"
 	"nacos/model"
 	"nacos/router"
 	"nacos/token"
@@ -25,6 +26,8 @@ func login(context *gin.Context) {
 		message = fmt.Sprintf("user %s not found", username)
 	} else if password != user.Password {
 		message = "password error"
+	} else if !user.Enabled {
+		message = "user disabled"
 	}
 	if message != "" {
 		accessDenied(context, message)
@@ -35,6 +38,29 @@ func login(context *gin.Context) {
 	db.GORM.Model(&model.Role{}).Where(&model.Role{Username: username, Role: consts.DefaultRole}).Count(&count)
 	isGlobalAdmin := util.ConditionalExpression(count > 0, true, false)
 	context.JSON(http.StatusOK, model.Token{AccessToken: tokenString, Ttl: claims.ExpiresAt - time.Now().Unix(), GlobalAdmin: isGlobalAdmin, Username: username})
+}
+
+func initAdmin(context *gin.Context) {
+	db.Transaction(func(tx *gorm.DB) {
+		username := consts.DefaultUsername
+		var roleCount, adminCount int64
+		role := &model.Role{Username: username, Role: consts.DefaultRole}
+		tx.Model(model.Role{}).Where(role).Count(&roleCount)
+		if roleCount == 0 {
+			dbutil.PanicError(tx.Create(role))
+		}
+		tx.Model(model.User{}).Where(&model.User{Username: username}).Count(&adminCount)
+		if adminCount == 0 {
+			password := model.Bind(context, &model.Password{}).Password
+			if password == "" {
+				password = util.RandString(8)
+			}
+			dbutil.PanicError(tx.Create(&model.User{Username: username, Password: util.MD5(password), Enabled: true}))
+			context.JSON(http.StatusOK, model.UserDetail{Username: username, Password: password})
+		} else {
+			context.String(http.StatusInternalServerError, "user exist")
+		}
+	})
 }
 
 func searchUser(context *gin.Context) {
@@ -58,7 +84,7 @@ func searchUsername(context *gin.Context) {
 
 func addUser(context *gin.Context) {
 	userInfo := model.Bind(context, &model.UserInfo{})
-	user := &model.User{Username: userInfo.Username.Username, Password: util.MD5(userInfo.Password)}
+	user := &model.User{Username: userInfo.Username.Username, Password: util.MD5(userInfo.Password), Enabled: true}
 	if err := db.GORM.Create(user).Error; errors.Is(err, gorm.ErrDuplicatedKey) {
 		context.String(http.StatusBadRequest, "user %s already exist!", userInfo.Username)
 	} else {
