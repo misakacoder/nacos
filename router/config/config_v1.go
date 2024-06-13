@@ -143,7 +143,7 @@ func export(context *gin.Context, v1 bool) {
 		conditions = append(conditions, []any{"id in ?", ids})
 	}
 	dbutil.MultiCondition(db.GORM.Model(model.ConfigInfo{}), conditions).Find(&configInfos)
-	root, _ := os.MkdirTemp("/", uuid.New().String())
+	root, _ := os.MkdirTemp("", uuid.New().String())
 	defer os.RemoveAll(root)
 	zipDir, _ := os.MkdirTemp(root, uuid.New().String())
 	zipFilename := fmt.Sprintf("nacos_config_export_%s.zip", time.Now().Format("20060102150405"))
@@ -260,7 +260,7 @@ func importConfig(context *gin.Context) {
 	srcUser := context.GetString("username")
 	srcIP := util.GetClientIP(context)
 	fileHeader, _ := context.FormFile("file")
-	dir, _ := os.MkdirTemp("/", uuid.New().String())
+	dir, _ := os.MkdirTemp("", uuid.New().String())
 	defer os.RemoveAll(dir)
 	filename := filepath.Join(dir, fileHeader.Filename)
 	context.SaveUploadedFile(fileHeader, filename)
